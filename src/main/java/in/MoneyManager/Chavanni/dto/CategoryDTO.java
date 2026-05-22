@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class CategoryDTO {
     private Long id;
-    private String profileId;
+    private Long profileId;
     private String name;
     private String type;
     private String icon;

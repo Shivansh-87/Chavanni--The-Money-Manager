@@ -29,7 +29,7 @@ public class CategoryEntity {
     private LocalDateTime updatedAt;
     private String type;
 
-    @ManyToMany(fetch=FetchType.LAZY)
+    @ManyToOne(fetch=FetchType.LAZY)
     @JoinColumn(name="profile_id", nullable = false)
     private ProfileEntity profile;
 
