@@ -1,6 +1,7 @@
 package in.MoneyManager.Chavanni.service;
 
 import in.MoneyManager.Chavanni.dto.ExpenseDTO;
+import in.MoneyManager.Chavanni.dto.FilterDTO;
 import in.MoneyManager.Chavanni.entity.CategoryEntity;
 import in.MoneyManager.Chavanni.entity.ExpenseEntity;
 import in.MoneyManager.Chavanni.entity.ProfileEntity;
@@ -42,7 +43,6 @@ public class ExpenseService {
         return toDTO(entity);
     }
 
-    // Returns all expenses for current user filtered by date range
     public List<ExpenseDTO> getExpensesByDateRange(LocalDate startDate, LocalDate endDate) {
         ProfileEntity profile = profileService.getCurrentProfile();
         return expenseRepository
@@ -50,17 +50,23 @@ public class ExpenseService {
                 .stream().map(this::toDTO).toList();
     }
 
-    // Returns all expenses filtered by date range + keyword search, with sorting
-    public List<ExpenseDTO> searchExpenses(LocalDate startDate, LocalDate endDate,
-                                           String keyword, Sort sort) {
+    public List<ExpenseDTO> filterExpenses(FilterDTO filterDTO) {
         ProfileEntity profile = profileService.getCurrentProfile();
-        return expenseRepository
+        Sort sort = Sort.by(
+                Sort.Direction.fromString(
+                        filterDTO.getSortOrder() != null ? filterDTO.getSortOrder() : "DESC"),
+                filterDTO.getSortField() != null ? filterDTO.getSortField() : "date"
+        );
+        List<ExpenseEntity> list = expenseRepository
                 .findByProfileIdAndDateBetweenAndNameContainingIgnoreCase(
-                        profile.getId(), startDate, endDate, keyword, sort)
-                .stream().map(this::toDTO).toList();
+                        profile.getId(),
+                        filterDTO.getStartDate(),
+                        filterDTO.getEndDate(),
+                        filterDTO.getKeyword() != null ? filterDTO.getKeyword() : "",
+                        sort);
+        return list.stream().map(this::toDTO).toList();
     }
 
-    // Returns latest 5 expenses
     public List<ExpenseDTO> getTop5RecentExpenses() {
         ProfileEntity profile = profileService.getCurrentProfile();
         return expenseRepository
@@ -68,7 +74,21 @@ public class ExpenseService {
                 .stream().map(this::toDTO).toList();
     }
 
-    // Returns total expense amount
+    // For controllers — gets profileId from security context
+    public List<ExpenseDTO> getExpensesForUserOnDate(LocalDate date) {
+        ProfileEntity profile = profileService.getCurrentProfile();
+        List<ExpenseEntity> list = expenseRepository
+                .findByProfileIdAndDate(profile.getId(), date);
+        return list.stream().map(this::toDTO).toList();
+    }
+
+    // For internal/scheduled jobs — profileId passed directly
+    public List<ExpenseDTO> findByProfileIdAndDate(Long profileId, LocalDate date) {
+        List<ExpenseEntity> list = expenseRepository
+                .findByProfileIdAndDate(profileId, date);
+        return list.stream().map(this::toDTO).toList();
+    }
+
     public BigDecimal getTotalExpenses() {
         ProfileEntity profile = profileService.getCurrentProfile();
         BigDecimal total = expenseRepository.findTotalExpenseByProfileId(profile.getId());

@@ -1,5 +1,6 @@
 package in.MoneyManager.Chavanni.service;
 
+import in.MoneyManager.Chavanni.dto.FilterDTO;
 import in.MoneyManager.Chavanni.dto.IncomeDTO;
 import in.MoneyManager.Chavanni.entity.CategoryEntity;
 import in.MoneyManager.Chavanni.entity.IncomeEntity;
@@ -42,7 +43,6 @@ public class IncomeService {
         return toDTO(entity);
     }
 
-    // Returns all incomes for current user filtered by date range
     public List<IncomeDTO> getIncomesByDateRange(LocalDate startDate, LocalDate endDate) {
         ProfileEntity profile = profileService.getCurrentProfile();
         return incomeRepository
@@ -50,17 +50,23 @@ public class IncomeService {
                 .stream().map(this::toDTO).toList();
     }
 
-    // Returns all incomes filtered by date range + keyword search, with sorting
-    public List<IncomeDTO> searchIncomes(LocalDate startDate, LocalDate endDate,
-                                         String keyword, Sort sort) {
+    public List<IncomeDTO> filterIncomes(FilterDTO filterDTO) {
         ProfileEntity profile = profileService.getCurrentProfile();
-        return incomeRepository
+        Sort sort = Sort.by(
+                Sort.Direction.fromString(
+                        filterDTO.getSortOrder() != null ? filterDTO.getSortOrder() : "DESC"),
+                filterDTO.getSortField() != null ? filterDTO.getSortField() : "date"
+        );
+        List<IncomeEntity> list = incomeRepository
                 .findByProfileIdAndDateBetweenAndNameContainingIgnoreCase(
-                        profile.getId(), startDate, endDate, keyword, sort)
-                .stream().map(this::toDTO).toList();
+                        profile.getId(),
+                        filterDTO.getStartDate(),
+                        filterDTO.getEndDate(),
+                        filterDTO.getKeyword() != null ? filterDTO.getKeyword() : "",
+                        sort);
+        return list.stream().map(this::toDTO).toList();
     }
 
-    // Returns latest 5 incomes
     public List<IncomeDTO> getTop5RecentIncomes() {
         ProfileEntity profile = profileService.getCurrentProfile();
         return incomeRepository
@@ -68,7 +74,13 @@ public class IncomeService {
                 .stream().map(this::toDTO).toList();
     }
 
-    // Returns total income amount
+    public List<IncomeDTO> getIncomesForUserOnDate(LocalDate date) {
+        ProfileEntity profile = profileService.getCurrentProfile();
+        List<IncomeEntity> list = incomeRepository
+                .findByProfileIdAndDate(profile.getId(), date);
+        return list.stream().map(this::toDTO).toList();
+    }
+
     public BigDecimal getTotalIncomes() {
         ProfileEntity profile = profileService.getCurrentProfile();
         BigDecimal total = incomeRepository.findTotalIncomeByProfileId(profile.getId());

@@ -17,6 +17,8 @@ public interface IncomeRepository extends JpaRepository<IncomeEntity, Long> {
 
     Optional<IncomeEntity> findByIdAndProfileId(Long id, Long profileId);
 
+    List<IncomeEntity> findByProfileIdAndDate(Long profileId, LocalDate date);
+
     @Query("SELECT SUM(i.amount) FROM IncomeEntity i WHERE i.profile.id = :profileId")
     BigDecimal findTotalIncomeByProfileId(@Param("profileId") Long profileId);
 
